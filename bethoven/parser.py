@@ -3,7 +3,6 @@ import functools
 import requests
 import random
 
-from requests.auth import HTTPProxyAuth
 from tqdm import tqdm
 
 from .html_parser import HHHtmlParser
@@ -54,7 +53,6 @@ PROXIES = [
         'https': 'http://Io2Ar8:iN20YYFn5r@188.130.128.142:1050',
     },
 
-
 ]
 
 
@@ -78,7 +76,6 @@ class Parser:
         self._set_session_param()
         self.city = None
         self._session.proxies.update()
-
 
     def _test_url(self, url, method, json=None, data=None, params=None):
         response = self._session.request(method, url, json=json, data=data, params=params)
@@ -121,10 +118,10 @@ class Parser:
         products = []
         end_page = self._get_end_page(category_href)
 
-
-
-        for page_num in range(1, end_page+1):
+        for page_num in range(1, end_page + 1):
             self._threads.append(self._executor.submit(self._get_products_from_page, category_href, page_num))
+            # if page_num == 3:
+            #     break
 
         for thread in tqdm(as_completed(self._threads), total=len(self._threads)):
             products.extend(thread.result())
@@ -132,7 +129,7 @@ class Parser:
         return products
 
     @set_random_proxy
-    def _get_products_from_page(self, category_href:str, page_num:int)-> [Product, ...]:
+    def _get_products_from_page(self, category_href: str, page_num: int) -> [Product, ...]:
         products = []
         response = self._session.get(self.main_url + category_href, params={
             "PAGEN_1": page_num,
@@ -167,8 +164,6 @@ class Parser:
         ]
         for product in products:
             product.offers = [self.get_offer_details(offer_id) for offer_id in product.current_offer_ids]
-
-
 
         return products
 

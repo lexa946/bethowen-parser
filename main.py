@@ -10,7 +10,7 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
-def save_to_csv(products_list: [Product, ...], csv_filename: str):
+def save_to_csv(products_list: [Product, ...], csv_filename: str, all_shops: bool = False):
     """
         Сохранение списка продуктов в файл csv
     :param products_list: список продуктов
@@ -22,15 +22,29 @@ def save_to_csv(products_list: [Product, ...], csv_filename: str):
 
         for product in products_list:
             for offer in product.offers:
-                writer.writerow((
-                    CONFIG['Main']['city_name'],
-                    offer.vendor_code,
-                    product.name,
-                    offer.retail_price,
-                    offer.discount_price,
-                    offer.shops[0].address,
-                    offer.shops[0].availability,
-                ))
+                if CONFIG['Main']['address_tt']:
+                    if not all_shops:
+                        writer.writerow((
+                            CONFIG['Main']['city_name'],
+                            offer.vendor_code,
+                            product.name,
+                            offer.retail_price,
+                            offer.discount_price,
+                            offer.shops[0].address,
+                            offer.shops[0].availability,
+                        ))
+                    else:
+                        for shop in offer.shops:
+                            writer.writerow((
+                                CONFIG['Main']['city_name'],
+                                offer.vendor_code,
+                                product.name,
+                                offer.retail_price,
+                                offer.discount_price,
+                                shop.address,
+                                shop.availability,
+                            ))
+
     logger.info(f"Файл {csv_filename}.csv создан.")
 
 
@@ -79,7 +93,7 @@ else:
         logger.info(f"Парсинг каталога {SCHEMA[schema_key].title}. href={SCHEMA[schema_key].href}")
         PRODUCTS.extend(PARSER.get_products_list(SCHEMA[schema_key].href))
 
-# save_to_csv(PRODUCTS, catalog_href.replace('/', '_') + "_all")
+save_to_csv(PRODUCTS, catalog_href.replace('/', '_') + "_all", all_shops=True)
 
 
 def filter_address(product: Product):
@@ -90,6 +104,7 @@ def filter_address(product: Product):
         shops_address.extend(
             shop.address for shop in offer.shops
         )
+    product.offers = list(filter(lambda offer: offer.shops, product.offers))
     if address in shops_address:
         return True
     return False
